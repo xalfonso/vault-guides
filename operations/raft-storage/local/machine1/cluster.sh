@@ -31,13 +31,13 @@ function vault_to_network_address {
       echo "http://10.128.0.16:8200"
       ;;
     vault_2)
-      echo "http://127.0.0.2:8200"
+      echo "http://10.128.0.17:8200"
       ;;
     vault_3)
-      echo "http://127.0.0.3:8200"
+      echo "http://10.128.0.18:8200"
       ;;
     vault_4)
-      echo "http://127.0.0.4:8200"
+      echo "http://10.128.0.20:8200"
       ;;
   esac
 }
@@ -49,17 +49,17 @@ function vault_1 {
 
 # Create a helper function to address the second vault node
 function vault_2 {
-    (export VAULT_ADDR=http://127.0.0.2:8200 && vault "$@")
+    (export VAULT_ADDR=http://10.128.0.17:8200 && vault "$@")
 }
 
 # Create a helper function to address the third vault node
 function vault_3 {
-    (export VAULT_ADDR=http://127.0.0.3:8200 && vault "$@")
+    (export VAULT_ADDR=http://10.128.0.18:8200 && vault "$@")
 }
 
 # Create a helper function to address the fourth vault node
 function vault_4 {
-    (export VAULT_ADDR=http://127.0.0.4:8200 && vault "$@")
+    (export VAULT_ADDR=http://10.128.0.20:8200 && vault "$@")
 }
 
 function stop_vault {
@@ -185,7 +185,7 @@ function clean {
     " - unseal / recovery keys" \
     ""
 
-  for loopback_address in "127.0.0.2" "127.0.0.3" "127.0.0.4" ; do
+  for loopback_address in "10.128.0.17" "10.128.0.18" "10.128.0.20" ; do
     loopback_exists=$(loopback_exists_at_address $loopback_address)
     if [[ $loopback_exists != "" ]] ; then
       printf "\n%s" \
@@ -300,6 +300,52 @@ function status {
   sleep 2
 }
 
+function create_network {
+
+  case "$os_name" in
+    darwin)
+      printf "\n%s" \
+      "[vault_2] Enabling local loopback on 10.128.0.17 (requires sudo)" \
+      ""
+
+      sudo ifconfig lo0 alias 10.128.0.17
+
+      printf "\n%s" \
+        "[vault_3] Enabling local loopback on 10.128.0.18 (requires sudo)" \
+        ""
+
+      sudo ifconfig lo0 alias 10.128.0.18
+
+      printf "\n%s" \
+        "[vault_4] Enabling local loopback on 10.128.0.20 (requires sudo)" \
+        ""
+
+      sudo ifconfig lo0 alias 10.128.0.20
+      ;;
+    linux)
+      printf "\n%s" \
+      "[vault_2] Enabling local loopback on 10.128.0.17 (requires sudo)" \
+      ""
+
+      sudo ip addr add 10.128.0.17/8 dev lo label lo:0
+
+      printf "\n%s" \
+        "[vault_3] Enabling local loopback on 10.128.0.18 (requires sudo)" \
+        ""
+
+      sudo ip addr add 10.128.0.18/8 dev lo label lo:1
+
+      printf "\n%s" \
+        "[vault_4] Enabling local loopback on 10.128.0.20 (requires sudo)" \
+        ""
+
+      sudo ip addr add 10.128.0.20/8 dev lo label lo:2
+
+      ;;
+  esac
+
+}
+
 function create_config {
 
   printf "\n%s" \
@@ -356,6 +402,63 @@ function setup_vault_1 {
 
   vault_1 secrets enable transit
   vault_1 write -f transit/keys/unseal_key
+}
+
+function setup_vault_2 {
+  start_vault "vault_2"
+  sleep 5s
+
+  printf "\n%s" \
+    "[vault_2] initializing and capturing the recovery key and root token" \
+    ""
+  sleep 2s # Added for human readability
+
+  # Initialize the second node and capture its recovery keys and root token
+  INIT_RESPONSE2=$(vault_2 operator init -format=json -recovery-shares 1 -recovery-threshold 1)
+
+  RECOVERY_KEY2=$(echo "$INIT_RESPONSE2" | jq -r .recovery_keys_b64[0])
+  VAULT_TOKEN2=$(echo "$INIT_RESPONSE2" | jq -r .root_token)
+
+  echo "$RECOVERY_KEY2" > recovery_key-vault_2
+  echo "$VAULT_TOKEN2" > root_token-vault_2
+
+  printf "\n%s" \
+    "[vault_2] Recovery key: $RECOVERY_KEY2" \
+    "[vault_2] Root token: $VAULT_TOKEN2" \
+    ""
+
+  printf "\n%s" \
+    "[vault_2] waiting to finish post-unseal setup (15 seconds)" \
+    ""
+
+  sleep 15s
+
+  printf "\n%s" \
+    "[vault_2] logging in and enabling the KV secrets engine" \
+    ""
+  sleep 2s # Added for human readability
+
+  vault_2 login "$VAULT_TOKEN2"
+  vault_2 secrets enable -path=kv kv-v2
+  sleep 2s
+
+  printf "\n%s" \
+    "[vault_2] storing secret 'kv/apikey' to demonstrate snapshot and recovery methods" \
+    ""
+  sleep 2s # Added for human readability
+
+  vault_2 kv put kv/apikey webapp=ABB39KKPTWOR832JGNLS02
+  vault_2 kv get kv/apikey
+}
+
+function setup_vault_3 {
+  start_vault "vault_3"
+  sleep 2s
+}
+
+function setup_vault_4 {
+  start_vault "vault_4"
+  sleep 2s
 }
 
 function create {
