@@ -31,7 +31,7 @@ function vault_to_network_address {
       echo "http://127.0.0.1:8200"
       ;;
     vault_2)
-      echo "http://127.0.0.2:8200"
+      echo "http://10.128.0.17:8200"
       ;;
     vault_3)
       echo "http://127.0.0.3:8200"
@@ -49,7 +49,7 @@ function vault_1 {
 
 # Create a helper function to address the second vault node
 function vault_2 {
-    (export VAULT_ADDR=http://127.0.0.2:8200 && vault "$@")
+    (export VAULT_ADDR=http://10.128.0.17:8200 && vault "$@")
 }
 
 # Create a helper function to address the third vault node
@@ -300,68 +300,7 @@ function status {
   sleep 2
 }
 
-function create_network {
-
-  case "$os_name" in
-    darwin)
-      printf "\n%s" \
-      "[vault_2] Enabling local loopback on 127.0.0.2 (requires sudo)" \
-      ""
-
-      sudo ifconfig lo0 alias 127.0.0.2
-
-      printf "\n%s" \
-        "[vault_3] Enabling local loopback on 127.0.0.3 (requires sudo)" \
-        ""
-
-      sudo ifconfig lo0 alias 127.0.0.3
-
-      printf "\n%s" \
-        "[vault_4] Enabling local loopback on 127.0.0.4 (requires sudo)" \
-        ""
-
-      sudo ifconfig lo0 alias 127.0.0.4
-      ;;
-    linux)
-      printf "\n%s" \
-      "[vault_2] Enabling local loopback on 127.0.0.2 (requires sudo)" \
-      ""
-
-      sudo ip addr add 127.0.0.2/8 dev lo label lo:0
-
-      printf "\n%s" \
-        "[vault_3] Enabling local loopback on 127.0.0.3 (requires sudo)" \
-        ""
-
-      sudo ip addr add 127.0.0.3/8 dev lo label lo:1
-
-      printf "\n%s" \
-        "[vault_4] Enabling local loopback on 127.0.0.4 (requires sudo)" \
-        ""
-
-      sudo ip addr add 127.0.0.4/8 dev lo label lo:2
-
-      ;;
-  esac
-
-}
-
 function create_config {
-
-  printf "\n%s" \
-    "[vault_1] Creating configuration" \
-    "  - creating $demo_home/config-vault_1.hcl"
-
-  rm -f config-vault_1.hcl
-
-  tee "$demo_home"/config-vault_1.hcl 1> /dev/null <<EOF
-    storage "inmem" {}
-    listener "tcp" {
-      address = "127.0.0.1:8200"
-      tls_disable = true
-    }
-    disable_mlock = true
-EOF
 
   printf "\n%s" \
     "[vault_2] Creating configuration" \
@@ -378,12 +317,12 @@ EOF
     node_id = "vault_2"
   }
   listener "tcp" {
-    address = "127.0.0.2:8200"
-    cluster_address = "127.0.0.2:8201"
+    address = "10.128.0.17:8200"
+    cluster_address = "10.128.0.17:8201"
     tls_disable = true
   }
   seal "transit" {
-    address            = "http://127.0.0.1:8200"
+    address            = "http://10.128.0.16:8200"
     # token is read from VAULT_TOKEN env
     # token              = ""
     disable_renewal    = "false"
@@ -393,114 +332,9 @@ EOF
     mount_path         = "transit/"
   }
   disable_mlock = true
-  cluster_addr = "http://127.0.0.2:8201"
-EOF
-
-  printf "\n%s" \
-    "[vault_3] Creating configuration" \
-    "  - creating $demo_home/config-vault_3.hcl" \
-    "  - creating $demo_home/raft-vault_3"
-
-  rm -f config-vault_3.hcl
-  rm -rf "$demo_home"/raft-vault_3
-  mkdir -pm 0755 "$demo_home"/raft-vault_3
-
-  tee "$demo_home"/config-vault_3.hcl 1> /dev/null <<EOF
-  storage "raft" {
-    path    = "$demo_home/raft-vault_3/"
-    node_id = "vault_3"
-  }
-  listener "tcp" {
-    address = "127.0.0.3:8200"
-    cluster_address = "127.0.0.3:8201"
-    tls_disable = true
-  }
-  seal "transit" {
-    address            = "http://127.0.0.1:8200"
-    # token is read from VAULT_TOKEN env
-    # token              = ""
-    disable_renewal    = "false"
-
-    // Key configuration
-    key_name           = "unseal_key"
-    mount_path         = "transit/"
-  }
-  disable_mlock = true
-  cluster_addr = "http://127.0.0.3:8201"
-EOF
-
-  printf "\n%s" \
-    "[vault_4] Creating configuration" \
-    "  - creating $demo_home/config-vault_4.hcl" \
-    "  - creating $demo_home/raft-vault_4"
-
-  rm -f config-vault_4.hcl
-  rm -rf "$demo_home"/raft-vault_4
-  mkdir -pm 0755 "$demo_home"/raft-vault_4
-
-  tee "$demo_home"/config-vault_4.hcl 1> /dev/null <<EOF
-  storage "raft" {
-    path    = "$demo_home/raft-vault_4/"
-    node_id = "vault_4"
-  }
-  listener "tcp" {
-    address = "127.0.0.4:8200"
-    cluster_address = "127.0.0.4:8201"
-    tls_disable = true
-  }
-  seal "transit" {
-    address            = "http://127.0.0.1:8200"
-    # token is read from VAULT_TOKEN env
-    # token              = ""
-    disable_renewal    = "false"
-
-    // Key configuration
-    key_name           = "unseal_key"
-    mount_path         = "transit/"
-  }
-  disable_mlock = true
-  cluster_addr = "http://127.0.0.4:8201"
+  cluster_addr = "http://10.128.0.17:8201"
 EOF
   printf "\n"
-}
-
-function setup_vault_1 {
-  start_vault "vault_1"
-  sleep 5s
-
-  printf "\n%s" \
-    "[vault_1] initializing and capturing the unseal key and root token" \
-    ""
-  sleep 2s # Added for human readability
-
-  INIT_RESPONSE=$(vault_1 operator init -format=json -key-shares 1 -key-threshold 1)
-
-  UNSEAL_KEY=$(echo "$INIT_RESPONSE" | jq -r .unseal_keys_b64[0])
-  VAULT_TOKEN=$(echo "$INIT_RESPONSE" | jq -r .root_token)
-
-  echo "$UNSEAL_KEY" > unseal_key-vault_1
-  echo "$VAULT_TOKEN" > root_token-vault_1
-
-  printf "\n%s" \
-    "[vault_1] Unseal key: $UNSEAL_KEY" \
-    "[vault_1] Root token: $VAULT_TOKEN" \
-    ""
-
-  printf "\n%s" \
-    "[vault_1] unsealing and logging in" \
-    ""
-  sleep 2s # Added for human readability
-
-  vault_1 operator unseal "$UNSEAL_KEY"
-  vault_1 login "$VAULT_TOKEN"
-
-  printf "\n%s" \
-    "[vault_1] enabling the transit secret engine and creating a key to auto-unseal vault cluster" \
-    ""
-  sleep 5s # Added for human readability
-
-  vault_1 secrets enable transit
-  vault_1 write -f transit/keys/unseal_key
 }
 
 function setup_vault_2 {
@@ -548,16 +382,6 @@ function setup_vault_2 {
 
   vault_2 kv put kv/apikey webapp=ABB39KKPTWOR832JGNLS02
   vault_2 kv get kv/apikey
-}
-
-function setup_vault_3 {
-  start_vault "vault_3"
-  sleep 2s
-}
-
-function setup_vault_4 {
-  start_vault "vault_4"
-  sleep 2s
 }
 
 function create {

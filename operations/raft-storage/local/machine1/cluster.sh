@@ -28,7 +28,7 @@ function vault_to_network_address {
 
   case "$vault_node_name" in
     vault_1)
-      echo "http://10.128.0.19:8200"
+      echo "http://10.128.0.16:8200"
       ;;
     vault_2)
       echo "http://127.0.0.2:8200"
@@ -44,7 +44,7 @@ function vault_to_network_address {
 
 # Create a helper function to address the first vault node
 function vault_1 {
-    (export VAULT_ADDR=http://10.128.0.19:8200 && vault "$@")
+    (export VAULT_ADDR=http://10.128.0.16:8200 && vault "$@")
 }
 
 # Create a helper function to address the second vault node
@@ -311,7 +311,7 @@ function create_config {
   tee "$demo_home"/config-vault_1.hcl 1> /dev/null <<EOF
     storage "inmem" {}
     listener "tcp" {
-      address = "10.128.0.19:8200"
+      address = "10.128.0.16:8200"
       tls_disable = true
     }
     disable_mlock = true
