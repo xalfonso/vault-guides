@@ -363,8 +363,8 @@ function create_config {
     node_id = "vault_2"
   }
   listener "tcp" {
-    address = "10.128.0.17:8200"
-    cluster_address = "10.128.0.17:8201"
+    address = "0.0.0.0:8200"
+    cluster_address = "0.0.0.0:8201"
     tls_disable = true
   }
   seal "transit" {

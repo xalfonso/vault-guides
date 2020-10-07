@@ -357,7 +357,7 @@ function create_config {
   tee "$demo_home"/config-vault_1.hcl 1> /dev/null <<EOF
     storage "inmem" {}
     listener "tcp" {
-      address = "10.128.0.16:8200"
+      address = "0.0.0.0:8200"
       tls_disable = true
     }
     disable_mlock = true
