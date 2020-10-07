@@ -28,38 +28,38 @@ function vault_to_network_address {
 
   case "$vault_node_name" in
     vault_1)
-      echo "http://10.128.0.16:8200"
+      echo "http://34.68.178.191:8200"
       ;;
     vault_2)
-      echo "http://10.128.0.17:8200"
+      echo "http://35.193.143.237:8200"
       ;;
     vault_3)
-      echo "http://10.128.0.18:8200"
+      echo "http://34.68.213.224:8200"
       ;;
     vault_4)
-      echo "http://10.128.0.20:8200"
+      echo "http://34.122.79.127:8200"
       ;;
   esac
 }
 
 # Create a helper function to address the first vault node
 function vault_1 {
-    (export VAULT_ADDR=http://10.128.0.16:8200 && vault "$@")
+    (export VAULT_ADDR=http://34.68.178.191:8200 && vault "$@")
 }
 
 # Create a helper function to address the second vault node
 function vault_2 {
-    (export VAULT_ADDR=http://10.128.0.17:8200 && vault "$@")
+    (export VAULT_ADDR=http://35.193.143.237:8200 && vault "$@")
 }
 
 # Create a helper function to address the third vault node
 function vault_3 {
-    (export VAULT_ADDR=http://10.128.0.18:8200 && vault "$@")
+    (export VAULT_ADDR=http://34.68.213.224:8200 && vault "$@")
 }
 
 # Create a helper function to address the fourth vault node
 function vault_4 {
-    (export VAULT_ADDR=http://10.128.0.20:8200 && vault "$@")
+    (export VAULT_ADDR=http://34.122.79.127:8200 && vault "$@")
 }
 
 function stop_vault {
@@ -185,7 +185,7 @@ function clean {
     " - unseal / recovery keys" \
     ""
 
-  for loopback_address in "10.128.0.17" "10.128.0.18" "10.128.0.20" ; do
+  for loopback_address in "35.193.143.237" "34.68.213.224" "34.122.79.127" ; do
     loopback_exists=$(loopback_exists_at_address $loopback_address)
     if [[ $loopback_exists != "" ]] ; then
       printf "\n%s" \
@@ -305,41 +305,41 @@ function create_network {
   case "$os_name" in
     darwin)
       printf "\n%s" \
-      "[vault_2] Enabling local loopback on 10.128.0.17 (requires sudo)" \
+      "[vault_2] Enabling local loopback on 35.193.143.237 (requires sudo)" \
       ""
 
-      sudo ifconfig lo0 alias 10.128.0.17
+      sudo ifconfig lo0 alias 35.193.143.237
 
       printf "\n%s" \
-        "[vault_3] Enabling local loopback on 10.128.0.18 (requires sudo)" \
+        "[vault_3] Enabling local loopback on 34.68.213.224 (requires sudo)" \
         ""
 
-      sudo ifconfig lo0 alias 10.128.0.18
+      sudo ifconfig lo0 alias 34.68.213.224
 
       printf "\n%s" \
-        "[vault_4] Enabling local loopback on 10.128.0.20 (requires sudo)" \
+        "[vault_4] Enabling local loopback on 34.122.79.127 (requires sudo)" \
         ""
 
-      sudo ifconfig lo0 alias 10.128.0.20
+      sudo ifconfig lo0 alias 34.122.79.127
       ;;
     linux)
       printf "\n%s" \
-      "[vault_2] Enabling local loopback on 10.128.0.17 (requires sudo)" \
+      "[vault_2] Enabling local loopback on 35.193.143.237 (requires sudo)" \
       ""
 
-      sudo ip addr add 10.128.0.17/8 dev lo label lo:0
+      sudo ip addr add 35.193.143.237/8 dev lo label lo:0
 
       printf "\n%s" \
-        "[vault_3] Enabling local loopback on 10.128.0.18 (requires sudo)" \
+        "[vault_3] Enabling local loopback on 34.68.213.224 (requires sudo)" \
         ""
 
-      sudo ip addr add 10.128.0.18/8 dev lo label lo:1
+      sudo ip addr add 34.68.213.224/8 dev lo label lo:1
 
       printf "\n%s" \
-        "[vault_4] Enabling local loopback on 10.128.0.20 (requires sudo)" \
+        "[vault_4] Enabling local loopback on 34.122.79.127 (requires sudo)" \
         ""
 
-      sudo ip addr add 10.128.0.20/8 dev lo label lo:2
+      sudo ip addr add 34.122.79.127/8 dev lo label lo:2
 
       ;;
   esac
